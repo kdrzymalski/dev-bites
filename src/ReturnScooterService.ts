@@ -10,48 +10,30 @@ class ReturnScooterService {
     clientWithImmediatePayment: boolean,
     immediateTransactionsCounter: number,
   ): void {
-    // kod celowo nie jest najpiękniejszy
+    const calculatePriceMultiplicationFactor =
+      this.calculatePriceMultiplicationFactor(clientWithImmediatePayment)
 
-    let unlocking: number = 0.0
-    let pricePerMinute: number = 0.0
-    if (scooterData[0] === "not_fast") {
-      unlocking = scooterData[1] as number
-      pricePerMinute = scooterData[2] as number
-    } else {
-      unlocking = scooterData[3] as number
-      pricePerMinute = scooterData[4] as number
-    }
+    const price = this.calculatePrice(
+      scooterData,
+      minutes,
+      calculatePriceMultiplicationFactor,
+    )
 
-    let chargeAmount: number
-    let priceAmountClientMultiplicationFactor: number = 0.9
-    if (clientWithImmediatePayment) {
-      priceAmountClientMultiplicationFactor = 0.9
-    } else {
-      priceAmountClientMultiplicationFactor = 1
-    }
-    const price =
-      unlocking +
-      pricePerMinute * minutes * priceAmountClientMultiplicationFactor
-    chargeAmount = Math.max(price - clientCredit, 0)
+    const chargeAmount = this.clientChargerCalculator(price, clientCredit)
     this.chargeClient(clientId, chargeAmount)
-    let needsToChargeBattery: boolean = false
-    if (clientWithImmediatePayment) {
-      immediateTransactionsCounter++
-    }
-    if (batteryLevel < 0.07) {
-      needsToChargeBattery = true
-    }
-    let loyaltyPoints: number = 0
-    if (minutes > 15 && minutes < 50) {
-      loyaltyPoints = 4
-      if (priceAmountClientMultiplicationFactor < 1) {
-        loyaltyPoints = 2
-      }
-    }
 
-    if (minutes >= 50 && chargeAmount > 30) {
-      loyaltyPoints = 20
-    }
+    const needsToChargeBattery = this.batteryChecker(
+      clientWithImmediatePayment,
+      immediateTransactionsCounter,
+      batteryLevel,
+    )
+
+    const loyaltyPoints = this.loyaltyPointsCalculator(
+      immediateTransactionsCounter,
+      chargeAmount,
+      clientWithImmediatePayment,
+    )
+
     this.saveInDatabase(
       loyaltyPoints,
       chargeAmount,
@@ -71,6 +53,79 @@ class ReturnScooterService {
 
   private chargeClient(clientId: number, chargeAmount: number): void {
     // obciążenie karty kredytowej
+  }
+
+  private calculatePriceMultiplicationFactor(
+    clientWithImmediatePayment: boolean,
+  ): number {
+    let priceAmountClientMultiplicationFactor: number = 0.9
+    if (clientWithImmediatePayment) {
+      priceAmountClientMultiplicationFactor = 0.9
+    } else {
+      priceAmountClientMultiplicationFactor = 1
+    }
+
+    return priceAmountClientMultiplicationFactor
+  }
+
+  private clientChargerCalculator(price: number, clientCredit: number): number {
+    return Math.max(price - clientCredit, 0)
+  }
+
+  private batteryChecker(
+    clientWithImmediatePayment: boolean,
+    immediateTransactionsCounter: number,
+    batteryLevel: number,
+  ): boolean {
+    let needsToChargeBattery: boolean = false
+    if (clientWithImmediatePayment) {
+      immediateTransactionsCounter++
+    }
+    if (batteryLevel < 0.07) {
+      needsToChargeBattery = true
+    }
+    return needsToChargeBattery
+  }
+
+  private loyaltyPointsCalculator(
+    minutes: number,
+    chargeAmount: number,
+    clientWithImmediatePayment: boolean,
+  ) {
+    let loyaltyPoints: number = 0
+    if (minutes > 15 && minutes < 50) {
+      loyaltyPoints = 4
+      if (
+        this.calculatePriceMultiplicationFactor(clientWithImmediatePayment) < 1
+      ) {
+        loyaltyPoints = 2
+      }
+    }
+
+    if (minutes >= 50 && chargeAmount > 30) {
+      loyaltyPoints = 20
+    }
+    return loyaltyPoints
+  }
+  private calculatePrice(
+    scooterData: any[],
+    minutes: number,
+    priceAmountClientMultiplicationFactor: number,
+  ): number {
+    let unlocking: number = 0.0
+    let pricePerMinute: number = 0.0
+    if (scooterData[0] === "not_fast") {
+      unlocking = scooterData[1] as number
+      pricePerMinute = scooterData[2] as number
+    } else {
+      unlocking = scooterData[3] as number
+      pricePerMinute = scooterData[4] as number
+    }
+
+    return (
+      unlocking +
+      pricePerMinute * minutes * priceAmountClientMultiplicationFactor
+    )
   }
 }
 
