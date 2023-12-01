@@ -1,0 +1,34 @@
+# Zależności
+/node_modules
+
+# Pliki kompilacji
+/dist
+/build
+/.tscache
+
+# Pliki środowiskowe
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Pliki edytorów
+/.vscode
+/.idea
+/*.sublime-project
+/*.sublime-workspace
+
+# Pliki systemowe
+.DS_Store
+Thumbs.db
+
+# Logi
+/npm-debug.log
+/yarn-error.log
+/logs
+
+# Inne
+*.log
+*.pid
+*.pid.lock
